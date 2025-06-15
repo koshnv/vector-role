@@ -1,1 +1,11 @@
-{{ vector_config | to_nice_yaml }}
+# templates/vector.j2 пример
+data_dir = "/var/lib/vector"
+
+[sources.local_logs]
+type = "file"
+include = ["/var/lib/vector/local_logs/*"]
+
+[sinks.console]
+type = "console"
+inputs = ["local_logs"]
+encoding.codec = "json"

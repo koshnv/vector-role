@@ -1,0 +1,49 @@
+---
+- name: Verify vector-role
+  hosts: all
+  become: true
+  tasks:
+  
+    - name: Проверка наличия Vector
+      ansible.builtin.command: which vector
+      register: vector_check
+      failed_when: vector_check.rc != 0
+
+    - name: Проверка, что конфигурационный файл существует
+      stat:
+        path: /etc/vector/vector.toml
+      register: vector_config
+
+    - name: Проверка синтаксиса vector.toml через vector validate
+      command: vector validate --no-environment
+      register: validate_result
+      changed_when: false
+      failed_when: validate_result.rc != 0
+
+    - name: Проверка, что служба vector запущена
+      systemd:
+        name: vector
+        enabled: true
+        state: started
+
+    - name: Проверка, что служба vector действительно работает
+      shell: systemctl is-active vector
+      register: vector_status
+      changed_when: false
+      failed_when: vector_status.stdout != "active"
+
+    - name: Check Vector binary
+      ansible.builtin.command: which vector
+      register: vector_check
+      failed_when: vector_check.rc != 0
+
+    - name: Check Vector binary exists
+      ansible.builtin.command: vector --version
+      register: vector_version
+      changed_when: false
+      
+
+    - name: Show Vector version
+      debug:
+        var: vector_version.stdout
+

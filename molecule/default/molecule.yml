@@ -1,0 +1,56 @@
+---
+#Молекула тест UTF
+driver:
+  name: docker
+
+platforms:
+  - name: instance-oraclelinux
+    image: oraclelinux:8
+    command: /usr/sbin/init
+    privileged: true
+    pre_build_image: true
+
+#  - name: instance-ubuntu
+#    image: 
+#    privileged: true
+#    command: /bin/sleep infinity
+#    volumes:
+#      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+
+  - name: instance-ubuntu
+    image: eniocarboni/docker-ubuntu-systemd:latest
+    privileged: true
+    cgroupns_mode: host  # это важно для systemd
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+
+
+provisioner:
+  name: ansible
+  lint: |
+    yamllint .
+    ansible-lint
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+  config_options:
+    defaults:
+      roles_path: /home/ubuntu/Ansble/08-ansible-04-role/vector-role
+      #verbosity: 3
+  inventory:
+    group_vars:
+      instance-oraclelinux:
+        #ansible_python_interpreter: /usr/libexec/platform-python
+        ansible_python_interpreter: /usr/bin/python3
+        use_systemd: true
+        ansible_user: root
+        ansible_become: false
+      instance-ubuntu:
+        ansible_python_interpreter: /usr/bin/python3
+        use_systemd: true
+        ansible_user: root
+        ansible_become: false
+
+verifier:
+  name: ansible

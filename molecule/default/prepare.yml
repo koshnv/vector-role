@@ -1,0 +1,120 @@
+---
+- name: Prepare playbook
+  hosts: all
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Read /etc/os-release
+      raw: cat /etc/os-release
+      register: os_release
+      changed_when: false
+
+    - name: Install sudo for OracleLinux/RedHat
+      raw: yum install -y sudo || apt install -y sudo
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+      
+    - name: Install sudo for OracleLinux/RedHat
+      raw: |
+        apt update
+        apt install -y sudo
+      when: "'ID=ubuntu' in os_release.stdout or 'ID=debian' in os_release.stdout"
+      
+      
+#    - name: Configure passwordless sudo for root
+#      raw: echo "root ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ansible && chmod 0440 /etc/sudoers.d/ansible
+#      changed_when: true
+#      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+      
+      
+    - name: Configure passwordless sudo for root
+      raw: |
+        mkdir -p /etc/sudoers.d
+        echo "root ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ansible && chmod 0440 /etc/sudoers.d/ansible
+      changed_when: true
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout or 'ID=ubuntu' in os_release.stdout or 'ID=debian' in os_release.stdout"
+
+    #################################################################
+    # ORACLE LINUX / RHEL
+    #################################################################
+
+    - name: Install Python 3.9
+      raw: dnf install -y python39
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    - name: Symlink python3 -> python3.9
+      raw: |
+        rm -f /usr/bin/python3
+        ln -s /usr/bin/python3.9 /usr/bin/python3
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    - name: Install python3-dnf and other required modules
+      raw: dnf install -y python3-dnf python3-libselinux
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+
+
+    #################################################################
+    # DEBIAN / UBUNTU
+    #################################################################
+
+
+    - name: Install python3 and sudo for Ubuntu/Debian
+      raw: |
+        apt update
+        apt install -y python3 python3-apt python3-pip
+      when: "'ID=ubuntu' in os_release.stdout or 'ID=debian' in os_release.stdout"
+
+    #- name: Install platform-python for OracleLinux/RedHat
+    #  raw: yum install -y platform-python || dnf install -y platform-python
+    #  when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+      
+    #- name: Install python3-dnf for OracleLinux
+    #  raw: dnf install -y python3-dnf
+    #  when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    #- name: Install Python 3.9 for OracleLinux/RedHat
+    #  raw: dnf install -y python39
+    #  when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    #- name: Create symbolic link for Python 3.9
+    #  raw: ln -sf /usr/bin/python3.9 /usr/bin/python3
+    #  when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    #- name: Создать корректную символьную ссылку на platform-python
+    #  raw: ln -s /usr/libexec/platform-python /usr/bin/python3
+    #  when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    #################################################################
+    # DEBUG
+    #################################################################
+    
+    - name: Debug Python path
+      raw: ls -l /usr/bin/python3*
+      register: python_path
+      changed_when: false
+      failed_when: false
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    - name: Debug Python version
+      raw: /usr/bin/python3 --version
+      register: python_version
+      changed_when: false
+      failed_when: false
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    - name: Show debug info
+      debug:
+        msg: "Path: {{ python_path.stdout }} | Version: {{ python_version.stdout }}"
+      when: "'ID=\"ol\"' in os_release.stdout or 'ID_LIKE=\"fedora\"' in os_release.stdout"
+
+    - name: Set ansible_python_interpreter globally
+      set_fact:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Debug ansible_python_interpreter
+      debug:
+        msg: "Current interpreter: {{ ansible_python_interpreter | default('not set') }}"
+
+    - name: Gather facts (after installing python3)
+      setup:

@@ -1,0 +1,7 @@
+---
+# комментарий для проверки UTF-8
+- name: Converge
+  hosts: all
+  gather_facts: true
+  roles:
+    - role: vector

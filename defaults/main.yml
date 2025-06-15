@@ -1,4 +1,10 @@
 ---
-# defaults file for vector-role
+# defaults file for vector-role/vector/defaults/main.yml тест 
 clickhouse_user: netology
 clickhouse_password: netology
+vector_version: "0.22.3"
+vector_rpm_version: "0.21.1"
+vector_config_path: "/etc/vector/vector.toml"
+vector_deb_package: "vector_{{ vector_version }}-1_amd64.deb"
+vector_rpm_package: "vector-{{ vector_rpm_version }}-1.{{ ansible_architecture }}.rpm"
+use_systemd: false
